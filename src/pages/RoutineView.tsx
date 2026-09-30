@@ -15,6 +15,7 @@ export const RoutineView = () => {
 
   const batch = localStorage.getItem('cis_batch') || '20';
   const section = localStorage.getItem('cis_section') || 'A';
+  const labGroup = localStorage.getItem('cis_lab_group') || 'All';
 
   useEffect(() => {
     let isMounted = true;
@@ -22,7 +23,7 @@ export const RoutineView = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.getRoutine(batch, section);
+        const data = await api.getRoutine(batch, section, labGroup);
         if (isMounted) setClasses(data);
       } catch (err: any) {
         if (isMounted) setError(err.message || "Failed to load routine");

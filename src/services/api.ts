@@ -8,8 +8,12 @@ export const api = {
     return res.json();
   },
   
-  getRoutine: async (batch: string, section: string) => {
-    const res = await fetch(`${API_BASE}/routines/filter?batch=${batch}&section=${section}`);
+  getRoutine: async (batch: string, section: string, labGroup?: string) => {
+    let url = `${API_BASE}/routines/filter?batch=${batch}&section=${section}`;
+    if (labGroup) {
+      url += `&lab_group=${labGroup}`;
+    }
+    const res = await fetch(url);
     return res.json() as Promise<ClassSession[]>;
   },
   

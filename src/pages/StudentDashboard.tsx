@@ -9,9 +9,10 @@ import type { ClassSession } from '../types';
 export const StudentDashboard = () => {
   const [batch, setBatch] = useState(() => localStorage.getItem('cis_batch') || '');
   const [section, setSection] = useState(() => localStorage.getItem('cis_section') || '');
+  const [labGroup, setLabGroup] = useState(() => localStorage.getItem('cis_lab_group') || 'All');
   const [semester] = useState(() => localStorage.getItem('cis_semester') || 'Fall 2026');
   
-  const [options, setOptions] = useState({ batches: [], sections: [] });
+  const [options, setOptions] = useState<{ batches: string[], sections: string[] }>({ batches: [], sections: [] });
   const [classes, setClasses] = useState<ClassSession[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ClassSession[]>([]);
@@ -29,15 +30,25 @@ export const StudentDashboard = () => {
   useEffect(() => {
     if (batch) localStorage.setItem('cis_batch', batch);
     if (section) localStorage.setItem('cis_section', section);
+    if (labGroup) localStorage.setItem('cis_lab_group', labGroup);
     if (semester) localStorage.setItem('cis_semester', semester);
     
     if (batch && section) {
-      api.getRoutine(batch, section).then(data => {
+      api.getRoutine(batch, section, labGroup).then(data => {
         setClasses(data);
       }).catch(console.error);
     }
-  }, [batch, section, semester]);
+  }, [batch, section, labGroup, semester]);
   
+  const validLabGroups = options.sections.filter(s => {
+    if (!section || s === section) return false;
+    if (s.startsWith(section)) {
+      const suffix = s.substring(section.length);
+      return /^\d+$/.test(suffix);
+    }
+    return false;
+  });
+
   // Search
   useEffect(() => {
     if (searchQuery.length > 2) {
@@ -124,12 +135,29 @@ export const StudentDashboard = () => {
                 <select 
                   className="input-field appearance-none"
                   value={section}
-                  onChange={(e) => setSection(e.target.value)}
+                  onChange={(e) => {
+                    setSection(e.target.value);
+                    setLabGroup('All'); // Reset lab group when section changes
+                  }}
                 >
                   <option value="">Select Section</option>
                   {options.sections.map(s => <option key={s} value={s}>Section {s}</option>)}
                 </select>
               </div>
+
+              {validLabGroups.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-text-muted mb-1.5">Lab Group</label>
+                  <select 
+                    className="input-field appearance-none"
+                    value={labGroup}
+                    onChange={(e) => setLabGroup(e.target.value)}
+                  >
+                    <option value="All">All Groups</option>
+                    {validLabGroups.map(lg => <option key={lg} value={lg}>Group {lg}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
           </motion.div>
 

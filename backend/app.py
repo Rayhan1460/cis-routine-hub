@@ -285,6 +285,7 @@ def get_active_routine_metadata():
 def filter_routines():
     batch = request.args.get('batch')
     section = request.args.get('section')
+    lab_group = request.args.get('lab_group')
     
     if not batch or not section:
         return jsonify([])
@@ -299,13 +300,28 @@ def filter_routines():
         conn.close()
         return jsonify([])
         
-    c.execute('''
+    target_sections = [section]
+    
+    if lab_group and lab_group != 'All':
+        target_sections.append(lab_group)
+    else:
+        # Find recognized lab groups dynamically based on digits suffix
+        c.execute("SELECT DISTINCT section FROM routine_classes WHERE routine_version_id = ? AND batch = ?", (active_ver['id'], batch))
+        all_sections = [row[0] for row in c.fetchall()]
+        for sec in all_sections:
+            if sec.startswith(section) and sec != section:
+                suffix = sec[len(section):]
+                if suffix.isdigit():
+                    target_sections.append(sec)
+                    
+    placeholders = ','.join(['?'] * len(target_sections))
+    c.execute(f'''
         SELECT id, routine_version_id, batch, section, semester, day, 
                start_time as startTime, end_time as endTime, 
                course_code as courseCode, course_name as courseName, teacher, room 
         FROM routine_classes 
-        WHERE routine_version_id = ? AND batch = ? AND section = ?
-    ''', (active_ver['id'], batch, section))
+        WHERE routine_version_id = ? AND batch = ? AND section IN ({placeholders})
+    ''', [active_ver['id'], batch, *target_sections])
     
     rows = c.fetchall()
     conn.close()
