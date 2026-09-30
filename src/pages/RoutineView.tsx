@@ -1,19 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, User, Clock } from 'lucide-react';
-import { MOCK_CLASSES } from '../data/mockData';
-import type { DayOfWeek } from '../types';
+import { ArrowLeft, MapPin, User, Clock, Loader2 } from 'lucide-react';
+import { api } from '../services/api';
+import type { DayOfWeek, ClassSession } from '../types';
 import { cn } from '../utils/cn';
 
 const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const RoutineView = () => {
   const [activeDay, setActiveDay] = useState<DayOfWeek>('Wednesday');
+  const [classes, setClasses] = useState<ClassSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const batch = localStorage.getItem('cis_batch') || '20';
   const section = localStorage.getItem('cis_section') || 'A';
 
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRoutine = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.getRoutine(batch, section);
+        if (isMounted) setClasses(data);
+      } catch (err: any) {
+        if (isMounted) setError(err.message || "Failed to load routine");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchRoutine();
+    
+    // Set active day to today
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }) as DayOfWeek;
+    if (DAYS.includes(today)) {
+      setActiveDay(today);
+    }
+    
+    return () => { isMounted = false; };
+  }, [batch, section]);
+
   // Filter classes for the active day
-  const dayClasses = MOCK_CLASSES.filter(c => c.day === activeDay);
+  const dayClasses = classes.filter(c => c.day === activeDay).sort((a, b) => {
+    const tA = new Date(`2000/01/01 ${a.startTime}`).getTime();
+    const tB = new Date(`2000/01/01 ${b.startTime}`).getTime();
+    return tA - tB;
+  });
 
   return (
     <div className="space-y-6">
@@ -52,7 +85,20 @@ export const RoutineView = () => {
       <div className="glass-panel p-2 sm:p-6 rounded-2xl min-h-[400px]">
         <h2 className="text-xl font-bold text-white mb-6 px-4 pt-4 sm:p-0">{activeDay}'s Schedule</h2>
         
-        {dayClasses.length > 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Loader2 className="w-10 h-10 text-accent animate-spin mb-4" />
+            <p className="text-text-muted">Loading routine...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 border border-red-500/20">
+              <span className="text-red-400 font-bold text-xl">!</span>
+            </div>
+            <h3 className="text-lg font-medium text-red-400">Error Loading Routine</h3>
+            <p className="text-red-300/70 mt-1">{error}</p>
+          </div>
+        ) : dayClasses.length > 0 ? (
           <div className="space-y-4 px-2 sm:px-0 pb-4">
             {dayClasses.map(session => (
               <div key={session.id} className="bg-surface/50 border border-white/5 rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center gap-4 hover:border-white/10 transition-colors">
