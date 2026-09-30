@@ -22,11 +22,11 @@ if db_dir and not os.path.exists(db_dir):
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'dev-fallback-key')
 
-# Environment-aware session cookies
-is_prod = os.environ.get("FLASK_ENV") == "production"
+# Environment-aware session cookies (Render sets 'RENDER' env var)
+is_prod = os.environ.get("FLASK_ENV") == "production" or os.environ.get("RENDER") is not None
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = is_prod
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None' if is_prod else 'Lax'
 
 # Mail Configuration
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')

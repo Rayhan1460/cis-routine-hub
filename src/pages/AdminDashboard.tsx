@@ -29,10 +29,7 @@ export const AdminDashboard = () => {
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isAuthenticated) {
-       handleLogin();
-       return;
-    }
+    if (!isAuthenticated) return;
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       setFileName(file.name);
@@ -104,7 +101,15 @@ export const AdminDashboard = () => {
         </div>
 
         <div className="space-y-6">
-          {uploadState === 'idle' && (
+          {!isAuthenticated ? (
+            <div className="border-2 border-dashed border-white/20 rounded-xl p-10 text-center bg-white/5">
+              <p className="text-lg font-medium text-white mb-2">Authentication Required</p>
+              <p className="text-sm text-text-muted mb-6">Please log in to upload or manage routines.</p>
+              <button className="btn-primary px-6" onClick={handleLogin}>
+                Log In
+              </button>
+            </div>
+          ) : uploadState === 'idle' ? (
             <div className="border-2 border-dashed border-white/20 rounded-xl p-10 text-center hover:bg-white/5 transition-colors group relative cursor-pointer">
               <input 
                 type="file" 
@@ -120,9 +125,9 @@ export const AdminDashboard = () => {
                 Choose Excel File
               </button>
             </div>
-          )}
+          ) : null}
 
-          {uploadState === 'uploading' && (
+          {isAuthenticated && uploadState === 'uploading' && (
             <div className="border border-white/10 bg-surface/50 rounded-xl p-6 flex items-center gap-4">
               <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-accent animate-spin shrink-0"></div>
               <div className="flex-1">
@@ -135,7 +140,7 @@ export const AdminDashboard = () => {
             </div>
           )}
           
-          {uploadState === 'error' && (
+          {isAuthenticated && uploadState === 'error' && (
             <div className="border border-red-500/30 bg-red-500/10 rounded-xl p-6">
                <p className="text-lg font-medium text-red-400">Upload Failed</p>
                <p className="text-sm text-red-200/70 mt-1">{errorMsg}</p>
@@ -143,7 +148,7 @@ export const AdminDashboard = () => {
             </div>
           )}
 
-          {uploadState === 'ready' && uploadStats && (
+          {isAuthenticated && uploadState === 'ready' && uploadStats && (
             <div className="space-y-6">
               <div className="border border-green-500/30 bg-green-500/10 rounded-xl p-6">
                 <div className="flex items-start gap-4 mb-4">
