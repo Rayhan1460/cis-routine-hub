@@ -23,6 +23,34 @@ export const api = {
     if (!res.ok) return null;
     return res.json();
   },
+
+  checkAdminSession: async () => {
+    const res = await fetch(`${API_BASE}/admin/session`, { credentials: 'include' });
+    return res.ok;
+  },
+
+  loginAdmin: async (password: string) => {
+    const res = await fetch(`${API_BASE}/admin/login`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) {
+       const text = await res.text();
+       try {
+           const err = JSON.parse(text);
+           throw new Error(err.error || 'Login failed');
+       } catch {
+           throw new Error('Login failed. Server returned: ' + res.status);
+       }
+    }
+    return res.json();
+  },
+  
+  logoutAdmin: async () => {
+    await fetch(`${API_BASE}/admin/logout`, { method: 'POST', credentials: 'include' });
+  },
   
   uploadRoutine: async (file: File) => {
     const formData = new FormData();
@@ -32,7 +60,16 @@ export const api = {
       credentials: 'include',
       body: formData,
     });
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) {
+       const text = await res.text();
+       try {
+           const err = JSON.parse(text);
+           throw new Error(err.error || 'Upload failed');
+       } catch {
+           if (res.status === 401) throw new Error('Unauthorized. Please login again.');
+           throw new Error(`Upload failed. Server returned status: ${res.status}`);
+       }
+    }
     return res.json();
   },
   
@@ -45,6 +82,16 @@ export const api = {
       },
       body: JSON.stringify({ version_id: versionId }),
     });
+    if (!res.ok) {
+       const text = await res.text();
+       try {
+           const err = JSON.parse(text);
+           throw new Error(err.error || 'Publish failed');
+       } catch {
+           if (res.status === 401) throw new Error('Unauthorized. Please login again.');
+           throw new Error(`Publish failed. Server returned status: ${res.status}`);
+       }
+    }
     return res.json();
   }
 };

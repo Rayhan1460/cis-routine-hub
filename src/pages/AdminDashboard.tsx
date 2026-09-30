@@ -9,22 +9,27 @@ export const AdminDashboard = () => {
   const [versionId, setVersionId] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [activeStats, setActiveStats] = useState<any>(null);
-  const [token, setToken] = useState(() => localStorage.getItem('admin_token') || '');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    api.checkAdminSession().then(auth => setIsAuthenticated(auth)).catch(console.error);
     api.getActiveMetadata().then(setActiveStats).catch(console.error);
   }, [uploadState]);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const pwd = prompt("Enter Admin Password:");
     if (pwd) {
-      localStorage.setItem('admin_token', pwd);
-      setToken(pwd);
+      try {
+        await api.loginAdmin(pwd);
+        setIsAuthenticated(true);
+      } catch (err: any) {
+        alert(err.message);
+      }
     }
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!token) {
+    if (!isAuthenticated) {
        handleLogin();
        return;
     }

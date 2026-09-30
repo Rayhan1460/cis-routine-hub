@@ -37,7 +37,8 @@ app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS') == 'True'
 mail = Mail(app)
 
 # Allow credentials from production frontend domain
-CORS(app, supports_credentials=True)
+frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+CORS(app, origins=[frontend_url], supports_credentials=True)
 
 # In-memory OTP storage (In production, consider Redis or SQLite)
 otp_store = {}
